@@ -44,11 +44,17 @@ local sndMusic = click--temp
 local imgCoverTmp = Graphics.loadImage("app0:/DATA/noimg.png")
 local backTmp = Graphics.loadImage("app0:/DATA/noimg.png")
 local btnAccept = Graphics.loadImage("app0:/DATA/x.png")	 -- Used to be btnX
+local invBtnAccept = Graphics.loadImage("app0:/DATA/inv_x.png")
 local btnCancel = Graphics.loadImage("app0:/DATA/o.png")	 -- Used to be btnO
+local invBtnCancel = Graphics.loadImage("app0:/DATA/inv_o.png")
 local btnT = Graphics.loadImage("app0:/DATA/t.png")
+local invBtnT = Graphics.loadImage("app0:/DATA/inv_t.png")
 local btnS = Graphics.loadImage("app0:/DATA/s.png")
+local invBtnS = Graphics.loadImage("app0:/DATA/inv_s.png")
 local btnD = Graphics.loadImage("app0:/DATA/d.png")
+local invBtnD = Graphics.loadImage("app0:/DATA/inv_d.png")
 local imgArrows = Graphics.loadImage("app0:/DATA/tri_arrows.png")
+local invImgArrows = Graphics.loadImage("app0:/DATA/inv_tri_arrows.png")
 local imgWifi = Graphics.loadImage("app0:/DATA/wifi.png")
 local imgBattery = Graphics.loadImage("app0:/DATA/bat.png")
 local imgBack = Graphics.loadImage("app0:/DATA/back_01.jpg")
@@ -497,11 +503,12 @@ local yellow = Color.new(225, 184, 0)
 local green = Color.new(79, 152, 37)
 local purple = Color.new(151, 0, 185)
 local orange = Color.new(220, 120, 0)
-local darkpurple = Color.new(77, 4, 160)
+local darkpurple = Color.new(255, 255, 255)
 local lightblue = Color.new(67,178,255)
 local greyalpha = Color.new(45, 45, 45, 180)
 local bg = Color.new(153, 217, 234)
 local themeCol = Color.new(2, 72, 158)
+local contrastingText = Color.new(255, 255, 255)
 
 local base_x = 0
 local base_y = 0
@@ -554,7 +561,7 @@ local startCategory = 1
 local setReflections = 1
 local setSounds = 1
 local musicLoop = 1
-local themeColor = 0 -- 0 blue, 1 red, 2 yellow, 3 green, 4 grey, 5 black, 7 orange, 6 purple, 8 darkpurple. (reorder hack) 
+local themeColor = 0 -- 0 blue, 1 red, 2 yellow, 3 green, 4 grey, 5 black, 7 orange, 6 purple, 8 darkpurple. (reorder hack)
 local menuItems = 3 
 local setBackground = 1 
 local setLanguage = 0 
@@ -773,27 +780,51 @@ end
 play_music()
 
 function SetThemeColor()
-    if themeColor == 1 then
-        themeCol = red
-    elseif themeColor == 2 then
-        themeCol = yellow
-    elseif themeColor == 3 then
-        themeCol = green
-    elseif themeColor == 4 then
-        themeCol = lightgrey
-    elseif themeColor == 5 then
-        themeCol = black
-    elseif themeColor == 7 then
-        themeCol = orange
-    elseif themeColor == 6 then
-        themeCol = purple
-    elseif themeColor == 8 then
-        themeCol = darkpurple
-    else
-        themeCol = blue -- default blue
-    end
+	local menubar_color_tbl = {
+		[1] = red,
+		[2] = yellow,
+		[3] = green,
+		[4] = lightgrey,
+		[5] = black,
+		[6] = purple,
+		[7] = orange,
+		[8] = darkpurple
+	}
+	
+	themeCol = menubar_color_tbl[themeColor] or blue
 end
 SetThemeColor()
+
+function SetContrastingTextColor()
+	local sRGB = {
+		["r"] = {
+			["value"] = Color.getR(themeCol),
+			["weight"] = 0.2126
+		},
+		["g"] = {
+			["value"] = Color.getG(themeCol),
+			["weight"] = 0.7152
+		},
+		["b"] = {
+			["value"] = Color.getB(themeCol),
+			["weight"] = 0.0722
+		}
+	}
+
+	local L1 = 0
+	for _, c in pairs(sRGB) do
+		L1 = L1 + c.weight * ((c.value <= 0.03928) and c.value / 12.92 or ((c.value + 0.055) / 1.055) ^ 2.4)
+	end
+
+	if ((L1 + 0.05) / 0.05 >= 4.5) then
+		invertImg = true
+		contrastingText = black
+	else
+		invertImg = false
+		contrastingText = white
+	end
+end
+SetContrastingTextColor()
 
 function OneShotPrint(my_func)
     local loadingCacheImg = Graphics.loadImage("app0:/DATA/oneshot_cache_write.png")
@@ -905,10 +936,15 @@ function FreeMemory()
     end
     Graphics.freeImage(imgCoverTmp)
     Graphics.freeImage(btnAccept)		 -- Used to be btnX
+	Graphics.freeImage(invBtnAccept)
     Graphics.freeImage(btnCancel)		 -- Used to be btnO
+	Graphics.freeImage(invBtnCancel)
     Graphics.freeImage(btnT)
+	Graphics.freeImage(invBtnT)
     Graphics.freeImage(btnS)
+	Graphics.freeImage(invBtnS)
     Graphics.freeImage(btnD)
+	Graphics.freeImage(invBtnD)
     Graphics.freeImage(imgWifi)
     Graphics.freeImage(imgBattery)
     Graphics.freeImage(imgBack)
@@ -2605,25 +2641,25 @@ while true do
 	    Graphics.drawImage(800, 38, imgWifi)-- wifi icon
 	end
 	-- Footer buttons and icons. X positions set in ChangeLanguage()
-	Graphics.drawImage(label1ImgX, 510, btnAccept)	 -- Used to be btnX
-	Font.print(fnt20, label1X, 508, lang_lines[7], white)--Launch
-	Graphics.drawImage(label2ImgX, 510, btnT)
-	Font.print(fnt20, label2X, 508, lang_lines[8], white)--Details
+	Graphics.drawImage(label1ImgX, 510, invertImg and invBtnAccept or btnAccept)	 -- Used to be btnX
+	Font.print(fnt20, label1X, 508, lang_lines[7], contrastingText)--Launch
+	Graphics.drawImage(label2ImgX, 510, invertImg and invBtnT or btnT)
+	Font.print(fnt20, label2X, 508, lang_lines[8], contrastingText)--Details
 	if categoryButton == 1 then
-	    Graphics.drawImage(label3ImgX, 510, btnD)
+	    Graphics.drawImage(label3ImgX, 510, invertImg and invBtnD or btnD)
 	    Font.print(fnt22, 32, 34, xTextLookup(showCat), white)--PS VITA/HOMEBREWS/PSP/PSX/CUSTOM/ALL
-	    Font.print(fnt20, label3X, 508, lang_lines[9], white)--Category
+	    Font.print(fnt20, label3X, 508, lang_lines[9], contrastingText)--Category
 	elseif categoryButton == 2 then
 	    Graphics.drawImage(34, 37, imgArrows)
 	    Font.print(fnt22, 52, 34, xTextLookup(showCat), white)--PS VITA/HOMEBREWS/PSP/PSX/CUSTOM/ALL
 	else
-	    Graphics.drawImage(label3ImgX, 510, btnS)
+	    Graphics.drawImage(label3ImgX, 510, invertImg and invBtnS or btnS)
 	    Font.print(fnt22, 32, 34, xTextLookup(showCat), white)--PS VITA/HOMEBREWS/PSP/PSX/CUSTOM/ALL
-	    Font.print(fnt20, label3X, 508, lang_lines[9], white)--Category
+	    Font.print(fnt20, label3X, 508, lang_lines[9], contrastingText)--Category
 	end
 	if lockView == 0 then
-	    Graphics.drawImage(label4ImgX, 510, btnCancel)	 -- Used to be btnO
-	    Font.print(fnt20, label4X, 508, lang_lines[10], white)--View
+	    Graphics.drawImage(label4ImgX, 510, invertImg and invBtnCancel or btnCancel)	 -- Used to be btnO
+	    Font.print(fnt20, label4X, 508, lang_lines[10], contrastingText)--View
 	end
 
 	if showView == 5 then
@@ -3212,6 +3248,7 @@ while true do
                         themeColor = 0
                     end
                     SetThemeColor()
+					SetContrastingTextColor()
                 elseif menuY == 2 then
                     if gettingCovers == false then
                         gettingCovers = true
